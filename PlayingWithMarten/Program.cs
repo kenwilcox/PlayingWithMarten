@@ -24,7 +24,7 @@ namespace PlayingWithMarten
             using (var session = store.LightweightSession())
             {
                 var users = new List<User>();
-                for (var i = 0; i < 100000; i++)
+                for (var i = 0; i < 2000000; i++)
                 {
                     var user = new User { FirstName = "Bulk", LastName = "User", UserName = "userbk", Internal = false };
                     users.Add(user);
