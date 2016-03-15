@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Marten;
+using Npgsql;
 
 namespace PlayingWithMarten
 {
@@ -13,10 +14,11 @@ namespace PlayingWithMarten
 
             var store = DocumentStore.For(_ =>
             {
-                //_.AutoCreateSchemaObjects = AutoCreate.CreateOnly; // set to none to not change your schema
+                _.AutoCreateSchemaObjects = AutoCreate.CreateOnly; // set to none to not change your schema
                 _.Schema.Include<MyMartenRegistry>();
                 _.Connection("host=localhost;database=mydb;password=dummy;username=dummy");
                 _.UpsertType = Marten.Schema.PostgresUpsertType.Standard;
+                _.Logger(new ConsoleMartenLogger());
             });
 
             using (var session = store.LightweightSession())
@@ -24,19 +26,13 @@ namespace PlayingWithMarten
                 var users = new List<User>();
                 for (var i = 0; i < 100000; i++)
                 {
-                    var user = new User { FirstName = "Bulk", LastName = "User", UserName = "userb", Internal = false };
-                    //session.Store(user);
+                    var user = new User { FirstName = "Bulk", LastName = "User", UserName = "userbk", Internal = false };
                     users.Add(user);
-
-                    //    user = new User {FirstName = "Jennifer", LastName = "Siepert", UserName = "siepertj", Internal = true};
-                    //    session.Store(user);
-                    //session.SaveChanges();
                 }
-                //session.SaveChanges();
                 var data = users.ToArray();
                 store.BulkInsert(data);
 
-                var count = session.Query<User>().Count(x => x.UserName == "userb");
+                var count = session.Query<User>().Count(x => x.UserName.StartsWith("user"));
                 Console.WriteLine("Yes! " + count);
             }
 
@@ -52,8 +48,6 @@ namespace PlayingWithMarten
 
             using (var session = store.OpenSession())
             {
-                //var existing = session.Query<User>().Where(x => x.FirstName == "Han" && x.LastName == "Solo").Single();
-                //Console.WriteLine("UserName: " + existing.UserName);
                 var internalUsers = session.Query<User>().Where(x => x.Internal).OrderBy(x => x.UserName);
                 foreach (var user in internalUsers)
                 {
@@ -94,6 +88,41 @@ namespace PlayingWithMarten
         public MyMartenRegistry()
         {
             For<User>().Searchable(x => x.UserName);
+        }
+    }
+
+    public class ConsoleMartenLogger : IMartenLogger, IMartenSessionLogger
+    {
+        public IMartenSessionLogger StartSession(IQuerySession session)
+        {
+            return this;
+        }
+
+        public void SchemaChange(string sql)
+        {
+            Console.WriteLine("SchemaChange: Executing DDL change:");
+            Console.WriteLine("SchemaChange: " + sql);
+            Console.WriteLine();
+        }
+
+        public void LogSuccess(NpgsqlCommand command)
+        {
+            Console.WriteLine("LogSuccess: " + command.CommandText);
+            Console.WriteLine();
+        }
+
+        public void LogFailure(NpgsqlCommand command, Exception ex)
+        {
+            Console.WriteLine("LogFailure: Postgresql command failed!");
+            Console.WriteLine("LogFailure: " + command.CommandText);
+            Console.WriteLine("LogFailure: " + ex);
+            Console.WriteLine();
+        }
+
+        public void RecordSavedChanges(IDocumentSession session)
+        {
+            var lastCommit = session.LastCommit;
+            Console.WriteLine($"RecordSavedChanges: Persisted {lastCommit.Updated.Count()} updates, {lastCommit.Inserted.Count()} inserts, and {lastCommit.Deleted.Count()} deletions");
         }
     }
 }
