@@ -22,20 +22,20 @@ namespace PlayingWithMarten
                 _.Logger(new ConsoleMartenLogger());
             });
 
-            using (var session = store.LightweightSession())
-            {
-                var users = new List<User>();
-                for (var i = 0; i < 2000; i++)
-                {
-                    var user = new User { FirstName = "Bulk", LastName = "User", UserName = "user2k", Internal = false };
-                    users.Add(user);
-                }
-                var data = users.ToArray();
-                store.BulkInsert(data);
+            //using (var session = store.LightweightSession())
+            //{
+            //    var users = new List<User>();
+            //    for (var i = 0; i < 2000; i++)
+            //    {
+            //        var user = new User { FirstName = "Bulk", LastName = "User", UserName = "user2k", Internal = false };
+            //        users.Add(user);
+            //    }
+            //    var data = users.ToArray();
+            //    store.BulkInsert(data);
 
-                var count = session.Query<User>().Count(x => x.UserName.StartsWith("user"));
-                Console.WriteLine("Yes! " + count);
-            }
+            //    var count = session.Query<User>().Count(x => x.UserName.StartsWith("user"));
+            //    Console.WriteLine("Yes! " + count);
+            //}
 
             using (var session = store.DirtyTrackedSession())
             {
@@ -64,7 +64,10 @@ namespace PlayingWithMarten
                     if (!string.IsNullOrEmpty(user.OtherField)) Console.Write(": " + user.OtherField);
                     Console.WriteLine("");
                 }
-            }            
+            }
+
+            // so generated code/add to project...
+            //store.Advanced.WriteStorageCode("storage.cs");
         }
 
         private static void export_ddl()
