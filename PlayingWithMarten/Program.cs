@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Marten;
 using Npgsql;
+using Shouldly;
 
 namespace PlayingWithMarten
 {
@@ -21,20 +22,20 @@ namespace PlayingWithMarten
                 _.Logger(new ConsoleMartenLogger());
             });
 
-            using (var session = store.LightweightSession())
-            {
-                var users = new List<User>();
-                for (var i = 0; i < 2000000; i++)
-                {
-                    var user = new User { FirstName = "Bulk", LastName = "User", UserName = "userbk", Internal = false };
-                    users.Add(user);
-                }
-                var data = users.ToArray();
-                store.BulkInsert(data);
+            //using (var session = store.LightweightSession())
+            //{
+            //    var users = new List<User>();
+            //    for (var i = 0; i < 2000000; i++)
+            //    {
+            //        var user = new User { FirstName = "Bulk", LastName = "User", UserName = "userbk", Internal = false };
+            //        users.Add(user);
+            //    }
+            //    var data = users.ToArray();
+            //    store.BulkInsert(data);
 
-                var count = session.Query<User>().Count(x => x.UserName.StartsWith("user"));
-                Console.WriteLine("Yes! " + count);
-            }
+            //    var count = session.Query<User>().Count(x => x.UserName.StartsWith("user"));
+            //    Console.WriteLine("Yes! " + count);
+            //}
 
             using (var session = store.DirtyTrackedSession())
             {
@@ -44,6 +45,14 @@ namespace PlayingWithMarten
                     matt.OtherField = "Development Lead";
                     session.SaveChanges();
                 }
+            }
+
+            using (var session = store.LightweightSession())
+            {
+                var testUsers = session.Query<User>("where data ->> 'UserName' like 'wilcox%'").Single();
+                testUsers.LastName.ShouldBe("Wilcox");
+
+                Console.WriteLine("Test Users: " + testUsers);
             }
 
             using (var session = store.OpenSession())
